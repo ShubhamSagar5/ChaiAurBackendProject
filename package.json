@@ -2,9 +2,10 @@
   "name": "chaiaurbackendproject",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "scr/index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
   },
   "author": "Shubham Sagar",
   "license": "ISC",
@@ -12,6 +13,9 @@
     "nodemon": "^3.1.0"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.2",
     "prettier": "^3.2.5"
   }
 }
