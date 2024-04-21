@@ -32,7 +32,7 @@ const createApiError = (statusCode, message = "Something went wrong", errors = [
     if (stack) {
         instance.stack = stack;
     } else {
-        Error.captureStackTrace(instance, ApiError);
+        Error.captureStackTrace(instance, createApiError);
     }
 
     return instance;
