@@ -87,6 +87,126 @@ const registerUser = asyncHandler( async (req, res) => {
 } )
 
 
+const generateToken = async(userId)=>{
+
+    try {
+        const user = await User.findById(userId)
+        const generateAccessToken =  user.generateAccessToken()
+        const generateRefreshToken =  user.generateRefreshToken()
+    
+        user.refreshToken = generateRefreshToken 
+       await user.save({ validateBeforeSave: false })
+    
+        return {generateAccessToken,generateRefreshToken}
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:"Something went wrong while generating refresh and access token "+ error
+        })
+    }
+}
+
+const loginUser = async(req,res)=>{
+    try {
+        const {userName,email,password} = req.body 
+
+        if(!userName && !email){
+            return res.status(401).json({
+                success:false,
+                message:"UserName or Email one filed is required"
+            })
+        }
+        if(!password){
+            return res.status(401).json({
+                success:false,
+                message:"Password required"
+            })
+        }
+
+        const user = await User.findOne({$or:[{userName},{email}]})
+
+        if(!user){
+            return res.status(404).json({
+                success:"User Does Not exist"
+            })
+        }
+
+        const isPasswordCorrect = await user.isPasswordCorrect(password)
+
+        if(!isPasswordCorrect){
+            return res.status(401).json({
+                success:false,
+                message:"Password is incorrect"
+            })
+        }
+
+        const {generateAccessToken,generateRefreshToken} = await generateToken(user._id) 
+
+        if(!generateAccessToken && !generateRefreshToken){
+            return res.status(401).json({
+                success:false,
+                message:"Token is not generated"
+            })
+        }
+
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+        const option = {
+            httpOnly:true,
+            secure:true
+        }
+
+        return res.status(200).cookie("accessToken",generateAccessToken,option).cookie("refreshToken",generateRefreshToken,option).json({
+            success:true,
+            data:loggedInUser,
+            message:"User Login Successfully"
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:"Something went wrong"
+        })
+    }
+}
+
+
+const logoutUser = async(req,res)=>{
+    try {
+        const user = req.user
+
+        if(!user){
+            return res.status(404).json({
+                success:false,
+                message:"Userdata not found"
+            })
+        }
+
+        const id = user._id 
+        
+        const logoutUser = await User.findOneAndUpdate(id,{$unset:{refreshToken:1}},{new:true}).select("-password") 
+
+        
+        const option = {
+            httpOnly:true,
+            secure:true
+        }
+
+
+        return res.status(200).clearCookie("accessToken",option).clearCookie("refreshToken",option).json({
+            success:true,
+            data:logoutUser,
+            message:"User logout successfully"
+        })
+        
+    } catch (error) {
+        res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+}
+
 export {
-    registerUser,
+    registerUser,loginUser,logoutUser
 }
