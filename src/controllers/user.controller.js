@@ -256,6 +256,107 @@ const refreshAccessToken = async(req,res)=>{
     }
 }
 
+const changePassword = async(req,res)=> {
+    try {
+        
+        const {oldPassword ,newPassword,confirmPassword} = req.body 
+
+        if(!oldPassword || !newPassword || !confirmPassword){
+            return res.status(401).json({
+                success:false,
+                message:"All fileds are required"
+            })
+        }
+
+        if(newPassword !== confirmPassword){
+            return res.status(401).json({
+                success:false,
+                message:"newPassword and Confirm Password Not Match"
+            })
+        }
+ 
+
+        const user  = await User.findById(req.user?._id) 
+
+        const isPasswordCorrect = await user.isPasswordCorrect(newPassword)
+
+        if(!isPasswordCorrect){
+            return res.status(401).json({
+                success:false,
+                message:"Password Not Match"
+            })
+        }
+
+       await user.save({validateBeforeSave:false})
+
+       return res.status(200).json({
+        success:true,
+        message:"Password Change Successfully"
+    })
+    } catch (error) {
+            return res.status(500).json({
+                success:false,
+                message:error
+            })
+    }
+}
+
+const getCurrentUser = async(req,res)=>{
+    try {
+        
+        const user = req.user 
+
+        return res.status(200).json({
+            success:true,
+            message:"Current User Deatils",
+            data:user
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:"Something error occur while fetching the current user data " + error 
+        })
+    }
+}
+
+
+const updateAccountDeatils =  async(req,res)=>{
+    try {
+        
+        const {fullName,email} = req.body
+
+        if(!fullName || ! email){
+            return res.status(401).json({
+                success:false,
+                message:"Full name and email is required" + error 
+            })
+        }
+        const user = await User.findByIdAndUpdate(req.user?._id,{$set:{fullName:fullName,email:email}},{new:true}).select("-password")
+
+        if(!user){
+            return res.status(401).json({
+                success:false,
+                message:"Something error occur while fetching user and updating data" + error 
+            })
+        }
+
+        return res.status(200).json({
+            success:true,
+            data:user,
+            message:"Account updated"
+        })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:"Something error occur while fetching the current user data " + error 
+        })
+    }
+}
+
+
 export {
-    registerUser,loginUser,logoutUser,refreshAccessToken
+    registerUser,loginUser,logoutUser,refreshAccessToken,changePassword,updateAccountDeatils
 }
