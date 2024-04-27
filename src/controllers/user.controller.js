@@ -4,6 +4,8 @@ import { User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs"
+import jwt from 'jsonwebtoken'
+
 
 const registerUser = asyncHandler( async (req, res) => {
     // get user details from frontend
@@ -207,6 +209,53 @@ const logoutUser = async(req,res)=>{
     }
 }
 
+const refreshAccessToken = async(req,res)=>{
+    try {
+        
+        const refreshToken = req.cookies?.refreshToken || req.body.refreshToken 
+
+        if(!refreshToken){
+            return res.status(404).json({
+                success:false,
+                message:"Refresh Token Not Found"
+            })
+        }
+
+        const decodeJWT = jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET)
+
+        const user = await User.findById(decodeJWT?._id) 
+
+        if(refreshToken !== user?.refreshToken){
+            return res.status(401).json({
+                message:"Invalid Creaditial"
+            })
+        }
+
+        const {generateAccessToken,generateRefreshToken} = await generateToken(user?._id)
+
+        const option = {
+            httpOnly:true,
+            secure:true
+        }
+
+        return res.status(200).cookie("AccessToken",generateAccessToken,option).cookie("RefreshToken",generateRefreshToken,option).json({
+            success:true,
+            data:{
+                accessToken:generateAccessToken,
+                RefreshToken:generateRefreshToken
+            },
+            message:"refreshToken done"
+        })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+}
+
 export {
-    registerUser,loginUser,logoutUser
+    registerUser,loginUser,logoutUser,refreshAccessToken
 }
