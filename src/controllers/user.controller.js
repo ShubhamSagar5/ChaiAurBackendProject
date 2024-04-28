@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import { User} from "../models/user.model.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import fs from "fs"
 import jwt from 'jsonwebtoken'
@@ -357,6 +357,93 @@ const updateAccountDeatils =  async(req,res)=>{
 }
 
 
+const updateUserAvatar = async(req,res) => {
+
+    try {
+        
+        const {avatarFilePath} = req.file?.path 
+
+        if(!avatarFilePath){
+            return res.status(404).json({
+                success:false,
+                message:"avatarFile Path Not Found"
+            })
+        }
+
+        
+
+        const avatar = await uploadOnCloudinary(avatarFilePath)
+
+        if(!avatar.url){
+            return res.status(404).json({
+                success:false,
+                message:"Avatar file not upload on cloudinary"
+            })
+        }
+
+        const user = await User.findByIdAndUpdate(req.user?._id,
+                                                    {$set:{
+                                                        avatar:avatar.url
+                                                    }},{new:true}).select("-password")
+            
+        return res.status(200).json({
+            success:true,
+            data:user,
+            message:"Avatar update Successfully"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+
+}
+
+const updateUserCoverImage = async(req,res) => {
+
+    try {
+        
+        const {coverFilePath} = req.file?.path 
+
+        if(!coverFilePath){
+            return res.status(404).json({
+                success:false,
+                message:"coverImageFile Path Not Found"
+            })
+        }
+
+        
+
+        const coverImage = await uploadOnCloudinary(coverFilePath)
+
+        if(!coverImage.url){
+            return res.status(404).json({
+                success:false,
+                message:"Cover file not upload on cloudinary"
+            })
+        }
+
+        const user = await User.findByIdAndUpdate(req.user?._id,
+                                                    {$set:{
+                                                        coverImage:coverImage.url
+                                                    }},{new:true}).select("-password")
+            
+        return res.status(200).json({
+            success:true,
+            data:user,
+            message:"Cover Image update Successfully"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+
+}
+
+
 export {
-    registerUser,loginUser,logoutUser,refreshAccessToken,changePassword,updateAccountDeatils
+    registerUser,loginUser,logoutUser,refreshAccessToken,changePassword,updateAccountDeatils,updateUserAvatar,updateUserCoverImage
 }
